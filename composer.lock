@@ -3,31 +3,8 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
     ],
-    "hash": "af2c37b1ecb3563e11003ee2f33b1fa7",
+    "hash": "6a62120c61ba07eefb355e75fc4899da",
     "packages": [
-        {
-            "name": "gmo/common",
-            "version": "v1.9.1",
-            "source": {
-                "type": "git",
-                "url": "git@bitbucket.org:gmodev/common-library.git",
-                "reference": "v1.9.1"
-            },
-            "require": {
-                "psr/log": "1.0.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "3.7.*"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "": "src/"
-                }
-            },
-            "description": "A library for common code",
-            "time": "2014-02-24 18:07:47"
-        },
         {
             "name": "predis/predis",
             "version": "v0.8.5",
@@ -74,44 +51,6 @@
                 "redis"
             ],
             "time": "2014-01-16 14:10:29"
-        },
-        {
-            "name": "psr/log",
-            "version": "1.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/php-fig/log.git",
-                "reference": "fe0936ee26643249e916849d48e3a51d5f5e278b"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/php-fig/log/zipball/fe0936ee26643249e916849d48e3a51d5f5e278b",
-                "reference": "fe0936ee26643249e916849d48e3a51d5f5e278b",
-                "shasum": ""
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "Psr\\Log\\": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "PHP-FIG",
-                    "homepage": "http://www.php-fig.org/"
-                }
-            ],
-            "description": "Common interface for logging libraries",
-            "keywords": [
-                "log",
-                "psr",
-                "psr-3"
-            ],
-            "time": "2012-12-21 11:40:51"
         }
     ],
     "packages-dev": [

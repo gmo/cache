@@ -1,7 +1,6 @@
 <?php
 namespace IntegrationTest;
 
-use Psr\Log\NullLogger;
 use GMO\Cache\Redis;
 
 require_once __DIR__ . "/../../vendor/autoload.php";
