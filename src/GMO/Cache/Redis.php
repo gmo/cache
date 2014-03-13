@@ -49,12 +49,6 @@ class Redis implements ICache {
 	public function decrement($key, $value=1, $expiration = 0) {
 		$this->redis->decrby($key, $value);
 	}
-	
-	protected function initCounter($key, $expiration) {
-		if($this->get($key) === NULL) {
-			$this->set($key, 0, $expiration);
-		}
-	}
 		
 	protected $host = null;
 	protected $port = null;
