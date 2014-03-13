@@ -50,19 +50,21 @@ class Memcache implements ICache {
 	}
 	
 	public function increment($key, $value=1, $expiration = 0) {
-		$this->initCounter($key, $expiration);		
-		$this->memcache->increment($key, $value);
+		$result = $this->memcache->increment($key, $value);
+		if($result === false) {
+			$this->memcache->add($key, 0, false, $expiration);
+			$result = $this->memcache->increment($key, $value);
+		}
+		return $result;
 	}
 	
 	public function decrement($key, $value=1, $expiration = 0) {
-		$this->initCounter($key, $expiration);
-		$this->memcache->decrement($key, $value);
-	}
-	
-	protected function initCounter($key, $expiration) {
-		if($this->get($key) === NULL) {
+		$result = $this->memcache->decrement($key, $value);
+		if($result === false) {
 			$this->memcache->add($key, 0, false, $expiration);
+			$result = $this->memcache->decrement($key, $value);
 		}
+		return $result;
 	}
 		
 	protected $host = null;
