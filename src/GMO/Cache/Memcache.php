@@ -30,14 +30,11 @@ class Memcache implements ICache {
 			return NULL;
 		}
 		
-		return $result;
+		return json_decode($result, true);
 	}
 	
 	public function set($key, $value, $expiration = 0) {
-		if(!is_string($value)) {
-			$value = json_encode($value);
-		}
-		
+		$value = json_encode($value);
 		$this->memcache->set($key, $value, false, $expiration);
 	}
 	

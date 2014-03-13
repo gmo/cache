@@ -24,10 +24,18 @@ class Redis implements ICache {
 	}
 
 	public function get($key) {
-		return $this->redis->get($key);
+		$result = $this->redis->get($key);
+		if($result === NULL) {
+			return NULL;
+		}
+		
+		return json_decode($result, true);
 	}
 	
 	public function set($key, $value, $expiration = 0) {
+		// TODO: Replace this with Redis serialization - https://github.com/nrk/predis/issues/29#issuecomment-1202624
+		$value = json_encode($value);
+		
 		$this->redis->set($key, $value);
 		if(!empty($expiration)) {
 			$this->redis->expire($key, $expiration);

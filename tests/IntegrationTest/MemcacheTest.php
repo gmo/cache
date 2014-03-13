@@ -29,6 +29,24 @@ class MemcacheTest extends \PHPUnit_Framework_TestCase {
 		$this->assertSame(NULL, $result);
 	}
 	
+	public function test_set_and_get_serialized() {
+		$values = array(
+			'one' => 'bar',
+			'two' => 'baz' );
+		
+		$this->cache->set('foo', $values);
+		$result = $this->cache->get('foo');
+		
+		$this->assertTrue(is_array($result));
+		$this->assertCount(2, $result);
+		$this->assertArrayHasKey('one', $result);
+		$this->assertArrayHasKey('two', $result);
+		$this->assertSame('bar', $result['one']);
+		$this->assertSame('baz', $result['two']);
+
+		$this->cache->deleteAll();
+	}
+		
 	public function test_delete() {
 		$this->cache->set('foo', 'bar');
 		$this->cache->delete('foo');
@@ -90,8 +108,8 @@ class MemcacheTest extends \PHPUnit_Framework_TestCase {
 		$one = $this->cache->get('foo');
 		
 		$this->assertSame(0, $zero);
-		$this->assertSame('2', $two);
-		$this->assertSame('1', $one);
+		$this->assertSame(2, $two);
+		$this->assertSame(1, $one);
 		$this->assertSame(0, $zero_i);
 		$this->assertSame(2, $two_i);
 		$this->assertSame(1, $one_i);
@@ -111,8 +129,8 @@ class MemcacheTest extends \PHPUnit_Framework_TestCase {
 		$two = $this->cache->get('foo');
 	
 		$this->assertSame(0, $zero);
-		$this->assertSame('4', $four);
-		$this->assertSame('2', $two);
+		$this->assertSame(4, $four);
+		$this->assertSame(2, $two);
 		$this->assertSame(0, $zero_i);
 		$this->assertSame(4, $four_i);
 		$this->assertSame(2, $two_i);
