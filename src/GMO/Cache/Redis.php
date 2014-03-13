@@ -43,11 +43,11 @@ class Redis implements ICache {
 	}
 	
 	public function increment($key, $value=1, $expiration = 0) {
-		$this->redis->incrby($key, $value);
+		return $this->redis->incrby($key, $value);
 	}
 	
 	public function decrement($key, $value=1, $expiration = 0) {
-		$this->redis->decrby($key, $value);
+		return $this->redis->decrby($key, $value);
 	}
 		
 	protected $host = null;

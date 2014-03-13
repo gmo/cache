@@ -52,62 +52,72 @@ class MemcacheTest extends \PHPUnit_Framework_TestCase {
 	}
 	
 	public function test_increment() {
-		$this->cache->increment('foo');
+		$one_i = $this->cache->increment('foo');
 		$one = $this->cache->get('foo');
-		$this->cache->increment('foo');
+		$two_i = $this->cache->increment('foo');
 		$two = $this->cache->get('foo');
 		
 		$this->assertSame(1, $one);
 		$this->assertSame(2, $two);
-
+		$this->assertSame(1, $one_i);
+		$this->assertSame(2, $two_i);
+		
 		$this->cache->deleteAll();
 	}
 	
 	public function test_increment_by_2() {
-		$this->cache->increment('foo', 2);
+		$two_i = $this->cache->increment('foo', 2);
 		$two = $this->cache->get('foo');
-		$this->cache->increment('foo', 2);
+		$four_i = $this->cache->increment('foo', 2);
 		$four = $this->cache->get('foo');
 	
 		$this->assertSame(2, $two);
 		$this->assertSame(4, $four);
+		$this->assertSame(2, $two_i);
+		$this->assertSame(4, $four_i);
 		
 		$this->cache->deleteAll();
 	}
 	
 	public function test_decrement() {
-		$this->cache->decrement('foo');
+		$zero_i = $this->cache->decrement('foo');
 		$zero = $this->cache->get('foo');
 		
 		$this->cache->set('foo', 3);
 		
-		$this->cache->decrement('foo');
+		$two_i = $this->cache->decrement('foo');
 		$two = $this->cache->get('foo');
-		$this->cache->decrement('foo');
+		$one_i = $this->cache->decrement('foo');
 		$one = $this->cache->get('foo');
 		
 		$this->assertSame(0, $zero);
 		$this->assertSame('2', $two);
 		$this->assertSame('1', $one);
-	
+		$this->assertSame(0, $zero_i);
+		$this->assertSame(2, $two_i);
+		$this->assertSame(1, $one_i);
+		
 		$this->cache->deleteAll();
 	}
 	
 	public function test_decrement_by_2() {
-		$this->cache->decrement('foo', 2);
+		$zero_i = $this->cache->decrement('foo', 2);
 		$zero = $this->cache->get('foo');
 	
 		$this->cache->set('foo', 6);
 	
-		$this->cache->decrement('foo', 2);
+		$four_i = $this->cache->decrement('foo', 2);
 		$four = $this->cache->get('foo');
-		$this->cache->decrement('foo', 2);
+		$two_i = $this->cache->decrement('foo', 2);
 		$two = $this->cache->get('foo');
 	
 		$this->assertSame(0, $zero);
 		$this->assertSame('4', $four);
 		$this->assertSame('2', $two);
-	
+		$this->assertSame(0, $zero_i);
+		$this->assertSame(4, $four_i);
+		$this->assertSame(2, $two_i);
+		
 		$this->cache->deleteAll();
 	}
 		
