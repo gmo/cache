@@ -2,6 +2,7 @@
 namespace GMO\Cache;
 
 use GMO\Cache\Exception\ConnectionFailureException;
+use GMO\Cache\Exception\DependencyMissingException;
 
 /**
  * Class Memcache
@@ -13,6 +14,10 @@ class Memcache implements ICache {
 		$this->host = $host;
 		$this->port = $port;
 		$this->memcache = new \Memcache();
+		if(!class_exists('Memcache')) {
+			throw new DependencyMissingException('Class \Memcache does not exist');
+		}
+		
 		$connectionSuccess = $this->memcache->connect($this->host, $this->port);
 		if(empty($connectionSuccess)) {
 			throw new ConnectionFailureException('Unable to connect to Memcache server');
