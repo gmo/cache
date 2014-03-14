@@ -2,6 +2,7 @@
 namespace IntegrationTest;
 
 use GMO\Cache\Redis;
+use GMO\Cache\Exception\ConnectionFailureException;
 
 require_once __DIR__ . "/../../vendor/autoload.php";
 
@@ -9,6 +10,28 @@ class RedisTest extends \PHPUnit_Framework_TestCase {
 
 	protected function setUp() {
 		$this->cache = new Redis();
+		$this->cache->deleteAll();
+	}
+	
+	public function test_invalid_construct() {
+		try {
+			$cache = new Redis('localhost', 100);
+		} catch (ConnectionFailureException $e) {
+			$this->assertSame('Connection refused [tcp://localhost:100]', $e->getMessage());
+			return;
+		}
+		
+		$this->fail('Exception ConnectionFailureException was not raised');
+	}
+	
+	public function test_master_slave() {
+		$cache = new Redis('localhost', 6379, array(
+			array('host' => 'localhost', 'port' => 6379)));
+		
+		$this->cache->set('foo', 'bar');
+		$result = $this->cache->get('foo');
+		
+		$this->assertSame('bar', $result);
 		$this->cache->deleteAll();
 	}
 	
