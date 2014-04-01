@@ -3,6 +3,7 @@ namespace GMO\Cache;
 
 use GMO\Cache\Exception\ConnectionFailureException;
 use GMO\Cache\Exception\InvalidSlaveException;
+use Predis\Client;
 
 /**
  * Class Redis
@@ -27,7 +28,7 @@ class Redis implements ICache {
 		}
 		
 		try {
-			$this->redis = new \Predis\Client($parameters, $options);
+			$this->redis = new Client($parameters, $options);
 			$this->redis->connect();
 		} catch(\Exception $e) {
 			throw new ConnectionFailureException($e->getMessage());
@@ -36,23 +37,20 @@ class Redis implements ICache {
 	
 	public function get($key) {
 		$result = $this->redis->get($key);
-		if($result === NULL) {
-			return NULL;
-		}
-		
 		return json_decode($result, true);
 	}
-	
+
 	public function set($key, $value, $expiration = 0) {
 		// TODO: Replace this with Redis serialization - https://github.com/nrk/predis/issues/29#issuecomment-1202624
 		$value = json_encode($value);
-		
-		$this->redis->set($key, $value);
-		if(!empty($expiration)) {
-			$this->redis->expire($key, $expiration);
+
+		if($expiration === 0) {
+			$this->redis->set($key, $value);
+		} else {
+			$this->redis->setex($key, $expiration, $value);
 		}
 	}
-	
+
 	public function delete($key) {
 		$this->redis->del($key);
 	}
@@ -96,5 +94,5 @@ class Redis implements ICache {
 	
 	protected $host = null;
 	protected $port = null;
-	protected $memcache;
+	public $redis;
 }
