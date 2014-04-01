@@ -1,4 +1,4 @@
 <?php
 namespace GMO\Cache\Exception;
 
-class ConnectionFailureException extends \Exception {}
+class ConnectionFailureException extends CacheException {}
