@@ -105,8 +105,8 @@ class RedisTest extends \PHPUnit_Framework_TestCase {
 		
 		$this->cache->deleteAll();
 		$this->cache->selectDb(0);
-		$this->cache->set('foo', 'bar');
 		$result = $this->cache->get('foo');
+		$this->assertSame('bar', $result);
 	}
 	
 	public function test_increment() {
