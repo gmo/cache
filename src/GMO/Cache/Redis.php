@@ -56,7 +56,7 @@ class Redis implements ICache {
 	}
 	
 	public function deleteAll() {
-		$this->redis->flushall();
+		$this->redis->flushdb();
 	}
 	
 	public function increment($key, $value=1, $expiration = 0) {
@@ -65,6 +65,10 @@ class Redis implements ICache {
 	
 	public function decrement($key, $value=1, $expiration = 0) {
 		return $this->redis->decrby($key, $value);
+	}
+	
+	public function selectDb($database) {
+		return $this->redis->select($database);
 	}
 
 	protected function makeSlaveParameters($parameters, $slaves) {
