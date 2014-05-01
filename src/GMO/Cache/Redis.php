@@ -54,7 +54,12 @@ class Redis implements ICache {
 	public function delete($key) {
 		$this->redis->del($key);
 	}
-	
+
+	public function deleteMultiple($args, $_ = null) {
+		$keys = static::normalizeArgs(func_get_args());
+		$this->redis->del($keys);
+	}
+
 	public function deleteAll() {
 		$this->redis->flushdb();
 	}
@@ -69,6 +74,61 @@ class Redis implements ICache {
 	
 	public function selectDb($database) {
 		return $this->redis->select($database);
+	}
+
+	//region Hash commands
+	public function setHash($key, $field, $value) {
+		$this->redis->hset($key, $field, $value);
+	}
+
+	public function setMultipleHash($key, array $kvArray) {
+		$this->redis->hmset($key, $kvArray);
+	}
+
+	public function getHash($key, $field) {
+		return $this->redis->hget($key, $field);
+	}
+
+	public function getAllHash($key) {
+		return $this->redis->hgetall($key);
+	}
+
+	public function incrementHash($key, $field, $value = 1) {
+		return $this->redis->hincrby($key, $field, $value);
+	}
+	//endregion
+
+	//region List commands
+	public function prependList($key, $value) {
+		$this->redis->lpush($key, $value);
+	}
+
+	public function appendList($key, $value) {
+		$this->redis->rpush($key, $value);
+	}
+
+	public function trimList($key, $start, $stop) {
+		$this->redis->ltrim($key, $start, $stop);
+	}
+
+	public function getList($key, $start = 0, $stop = -1) {
+		return $this->redis->lrange($key, $start, $stop);
+	}
+
+	public function setList($key, array $data) {
+		$this->redis->pipeline(function($pipe) use ($key, $data) {
+			$pipe->del($key);
+			$pipe->rpush($key, $data);
+		});
+	}
+	//endregion
+
+	public function publish($channel, $message) {
+		$this->redis->publish($channel, $message);
+	}
+
+	public function pipeline($callback) {
+		return $this->redis->pipeline($callback);
 	}
 
 	protected function makeSlaveParameters($parameters, $slaves) {
@@ -95,7 +155,11 @@ class Redis implements ICache {
 	
 		return $parameters;
 	}
-	
+
+	private static function normalizeArgs(array $args) {
+		return (count($args) === 1 && is_array($args[0])) ? $args[0] : $args;
+	}
+
 	protected $host = null;
 	protected $port = null;
 	public $redis;
