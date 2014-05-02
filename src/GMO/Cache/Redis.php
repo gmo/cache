@@ -11,7 +11,7 @@ use Predis\Client;
  * @since 1.9.1
  */
 class Redis implements ICache {
-	public function __construct($host='localhost', $port=6379, $slaves=array()) {
+	public function __construct($host='localhost', $port=6379, $slaves=array(), $options=array()) {
 		$this->host = $host;
 		$this->port = $port;
 		
@@ -20,11 +20,10 @@ class Redis implements ICache {
 			'host'   => $host,
 			'port'   => (int) $port,
 			'alias'  => 'master' );
-		$options = null;
-		
+
 		if(!empty($slaves)) {
 			$parameters = $this->makeSlaveParameters($parameters, $slaves);
-			$options = array('replication' => true);
+			$options['replication'] = true;
 		}
 		
 		try {
