@@ -138,8 +138,6 @@ class MemcacheTest extends \PHPUnit_Framework_TestCase {
 		$this->cache->deleteAll();
 	}
 		
-	/**
-	 * @var ICache
-	 */
+	/** @var \GMO\Cache\ICache */
 	private $cache;
 }
