@@ -5,11 +5,18 @@
 		"predis/predis": "0.8.*"
 	},
 	"require-dev": {
+		"gmo/dependency-injection": "~1.0",
 		"phpunit/phpunit": "3.7.*"
+	},
+	"suggest": {
+		"gmo/dependency-injection": "Provides a service provider for dependency injection"
 	},
 	"autoload": {
 		"psr-4": {
 			"GMO\\Cache\\": "src/"
 		}
-	}	
+	},
+	"repositories": [
+		{ "type": "composer", "url": "composer.gmodev.com" }
+	]
 }
