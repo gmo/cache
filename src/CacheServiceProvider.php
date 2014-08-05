@@ -13,7 +13,7 @@ class CacheServiceProvider implements ServiceProviderInterface {
 		$container[CacheKeys::REDIS_PORT] = 6379;
 
 		$container[CacheKeys::REDIS_NEW] = function() use ($container) {
-			return new Redis($container[CacheKeys::REDIS_HOST], CacheKeys::REDIS_PORT);
+			return new Redis($container[CacheKeys::REDIS_HOST], $container[CacheKeys::REDIS_PORT]);
 		};
 		$container[CacheKeys::REDIS] = $container->share(function() use ($container) {
 			return $container[CacheKeys::REDIS_NEW];
