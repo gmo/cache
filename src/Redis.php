@@ -4,6 +4,7 @@ namespace GMO\Cache;
 use GMO\Cache\Exception\ConnectionFailureException;
 use GMO\Cache\Exception\InvalidSlaveException;
 use Predis\Client;
+use Predis\Pipeline\PipelineContext;
 
 /**
  * Class Redis
@@ -14,7 +15,7 @@ class Redis implements ICache {
 	public function __construct($host='localhost', $port=6379, $slaves=array(), $options=array()) {
 		$this->host = $host;
 		$this->port = $port;
-		
+
 		$parameters = array(
 			'scheme' => 'tcp',
 			'host'   => $host,
@@ -25,7 +26,7 @@ class Redis implements ICache {
 			$parameters = $this->makeSlaveParameters($parameters, $slaves);
 			$options['replication'] = true;
 		}
-		
+
 		try {
 			$this->redis = new Client($parameters, $options);
 			$this->redis->connect();
@@ -33,7 +34,11 @@ class Redis implements ICache {
 			throw new ConnectionFailureException($e->getMessage());
 		}
 	}
-	
+
+	public function getClient() {
+		return $this->redis;
+	}
+
 	public function get($key) {
 		$result = $this->redis->get($key);
 		return json_decode($result, true);
@@ -62,15 +67,15 @@ class Redis implements ICache {
 	public function deleteAll() {
 		$this->redis->flushdb();
 	}
-	
+
 	public function increment($key, $value=1, $expiration = 0) {
 		return $this->redis->incrby($key, $value);
 	}
-	
+
 	public function decrement($key, $value=1, $expiration = 0) {
 		return $this->redis->decrby($key, $value);
 	}
-	
+
 	public function selectDb($database) {
 		return $this->redis->select($database);
 	}
@@ -116,6 +121,7 @@ class Redis implements ICache {
 
 	public function setList($key, array $data) {
 		$this->redis->pipeline(function($pipe) use ($key, $data) {
+			/** @var PipelineContext|\PredisPhpdoc\Client $pipe */
 			$pipe->del($key);
 			$pipe->rpush($key, $data);
 		});
@@ -134,9 +140,9 @@ class Redis implements ICache {
 		if(empty($parameters)) {
 			throw new ConnectionFailureException('Configuration for master is missing');
 		}
-		
+
 		$parameters = array($parameters);
-		
+
 		$i = 0;
 		foreach($slaves as $slave) {
 			if(!isset($slave['host']) || empty($slave['host'])) {
@@ -151,7 +157,7 @@ class Redis implements ICache {
 				'port'   => (int) $slave['port'],
 				'alias'  => 'slave' . ++$i );
 		}
-	
+
 		return $parameters;
 	}
 
@@ -161,5 +167,6 @@ class Redis implements ICache {
 
 	protected $host = null;
 	protected $port = null;
+	/** @var \PredisPhpdoc\Client */
 	public $redis;
 }
