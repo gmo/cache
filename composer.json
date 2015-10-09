@@ -2,7 +2,7 @@
 	"name": "gmo/cache",
 	"description": "Common cache abstraction and utilities",
 	"require": {
-		"predis/predis": "0.8.*",
+		"predis/predis": "^1.0",
 		"alexey-kupershtokh/predis-phpdoc": "*"
 	},
 	"require-dev": {
