@@ -231,67 +231,128 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     public function testHashSet()
     {
-        $this->markTestSkipped();
+        $this->assertTrue($this->client->hset('foo', 'bar', 'hello'));
+        $this->assertEquals('hello', $this->client->hget('foo', 'bar'));
+
+        $this->assertFalse($this->client->hset('foo', 'bar', 'world'));
+        $this->assertEquals('world', $this->client->hget('foo', 'bar'));
     }
 
-    public function testHashSetEx()
+    public function testHashSetNx()
     {
-        $this->markTestSkipped();
+        $this->assertTrue($this->client->hsetnx('foo', 'bar', 'hello'));
+        $this->assertEquals('hello', $this->client->hget('foo', 'bar'));
+
+        $this->assertFalse($this->client->hsetnx('foo', 'bar', 'world'));
+        $this->assertEquals('hello', $this->client->hget('foo', 'bar'));
     }
 
     public function testHashGet()
     {
-        $this->markTestSkipped();
+        $this->assertNull($this->client->hget('foo', 'bar'));
+
+        $this->client->hset('foo', 'bar', 'hello');
+        $this->assertEquals('hello', $this->client->hget('foo', 'bar'));
     }
 
     public function testHashLength()
     {
-        $this->markTestSkipped();
+        $this->assertSame(0, $this->client->hlen('foo'));
+
+        $this->client->hset('foo', 'hello', 'world');
+        $this->client->hset('foo', 'bar', 'baz');
+        $this->assertSame(2, $this->client->hlen('foo'));
     }
 
     public function testHashDelete()
     {
-        $this->markTestSkipped();
+        $this->assertSame(0, $this->client->hdel('foo', 'bar'));
+
+        $this->client->hset('foo', 'hello', 'world');
+        $this->client->hset('foo', 'bar', 'baz');
+        $this->client->hset('foo', 'red', 'blue');
+
+        $this->assertSame(2, $this->client->hdel('foo', 'hello', 'bar', 'derp'));
+        $this->assertEquals(array('red' => 'blue'), $this->client->hgetall('foo'));
     }
 
     public function testHashKeys()
     {
-        $this->markTestSkipped();
+        $this->assertSame(array(), $this->client->hkeys('foo'));
+
+        $this->client->hset('foo', 'hello', 'world');
+        $this->client->hset('foo', 'bar', 'baz');
+        $this->client->hset('foo', 'red', 'blue');
+
+        $this->assertEquals(array('hello', 'bar', 'red'), $this->client->hkeys('foo'));
     }
 
     public function testHashValues()
     {
-        $this->markTestSkipped();
+        $this->assertSame(array(), $this->client->hkeys('foo'));
+
+        $this->client->hset('foo', 'hello', 'world');
+        $this->client->hset('foo', 'bar', 'baz');
+        $this->client->hset('foo', 'red', 'blue');
+
+        $this->assertEquals(array('world', 'baz', 'blue'), $this->client->hvals('foo'));
     }
 
     public function testHashGetAll()
     {
-        $this->markTestSkipped();
+        $this->assertSame(array(), $this->client->hgetall('foo'));
+
+        $this->client->hset('foo', 'hello', 'world');
+        $this->client->hset('foo', 'bar', 'baz');
+        $this->client->hset('foo', 'red', 'blue');
+
+        $expected = array(
+            'hello' => 'world',
+            'bar'   => 'baz',
+            'red'   => 'blue',
+        );
+        $this->assertEquals($expected, $this->client->hgetall('foo'));
     }
 
     public function testHashExists()
     {
-        $this->markTestSkipped();
+        $this->assertFalse($this->client->hexists('foo', 'hello'));
+        $this->client->hset('foo', 'hello', 'world');
+        $this->assertTrue($this->client->hexists('foo', 'hello'));
     }
 
     public function testHashIncrementBy()
     {
-        $this->markTestSkipped();
+        $this->assertSame(2, $this->client->hincrby('foo', 'bar', 2));
+        $this->assertSame(4, $this->client->hincrby('foo', 'bar', 2));
     }
 
     public function testHashIncrementByFloat()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(1.5, $this->client->hincrbyfloat('foo', 'bar', 1.5));
+        $this->assertEquals(3.0, $this->client->hincrbyfloat('foo', 'bar', 1.5));
     }
 
     public function testHashMultipleSet()
     {
-        $this->markTestSkipped();
+        $expected = array(
+            'hello' => 'world',
+            'red'   => 'blue',
+        );
+        $this->client->hmset('foo', $expected);
+        $this->assertEquals($expected, $this->client->hgetall('foo'));
     }
 
     public function testHashMultipleGet()
     {
-        $this->markTestSkipped();
+        $expected = array(
+            'hello' => 'world',
+            'red'   => 'blue',
+            'herp'  => 'derp',
+        );
+        $this->client->hmset('foo', $expected);
+
+        $this->assertEquals(array('world', 'blue'), $this->client->hmget('foo', array('hello', 'red')));
     }
 
     //endregion
