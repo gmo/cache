@@ -32,7 +32,19 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     public function testDelete()
     {
-        $this->markTestSkipped();
+        $this->client->set('foo', 'bar');
+        $this->client->set('hello', 'world');
+
+        $this->client->del('foo', 'hello');
+        $this->assertFalse($this->client->exists('foo'));
+        $this->assertFalse($this->client->exists('hello'));
+
+        $this->client->set('foo', 'bar');
+        $this->client->set('hello', 'world');
+
+        $this->client->del(array('foo', 'hello'));
+        $this->assertFalse($this->client->exists('foo'));
+        $this->assertFalse($this->client->exists('hello'));
     }
 
     public function testDump()
@@ -42,22 +54,68 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     public function testExists()
     {
-        $this->markTestSkipped();
+        $this->assertFalse($this->client->exists('foo'));
+        $this->client->set('foo', 'bar');
+        $this->assertTrue($this->client->exists('foo'));
     }
 
     public function testExpire()
     {
-        $this->markTestSkipped();
+        $this->client->set('foo', 'bar');
+        $this->assertTrue($this->client->expire('foo', 1));
+        usleep(1.5e+6);
+        $this->assertFalse($this->client->exists('foo'));
     }
 
-    public function testPExpireAt()
+    public function testPreciseExpire()
     {
-        $this->markTestSkipped();
+        $this->client->set('foo', 'bar');
+        $this->assertTrue($this->client->pexpire('foo', 500));
+        usleep(1.5e+6);
+        $this->assertFalse($this->client->exists('foo'));
+    }
+
+    public function testExpireAt()
+    {
+        $this->client->set('foo', 'bar');
+        $this->client->expireat('foo', time() + 1);
+        usleep(1.5e+6);
+        $this->assertFalse($this->client->exists('foo'));
+    }
+
+    public function testPreciseExpireAt()
+    {
+        $this->client->set('foo', 'bar');
+        $this->client->pexpireat('foo', (time() + 1) * 1000);
+        usleep(1.5e+6);
+        $this->assertFalse($this->client->exists('foo'));
     }
 
     public function testKeys()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(array(), $this->client->keys('derp'));
+
+        $this->client->mset(array(
+            'color:red'   => 'red',
+            'color:blue'  => 'blue',
+            'color:green' => 'green',
+            'foo'         => 'bar',
+        ));
+
+        $expected = array(
+            'color:red',
+            'color:blue',
+            'color:green',
+        );
+        $this->assertArraySimilar($expected, $this->client->keys('color*'));
+
+        $expected[] = 'foo';
+        $this->assertArraySimilar($expected, $this->client->keys('*'));
+    }
+
+    protected function assertArraySimilar(array $expected, array $actual)
+    {
+        $this->assertSame(array_diff($expected, $actual), array_diff($actual, $expected));
     }
 
     public function testMove()
@@ -72,35 +130,86 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     public function testPersist()
     {
-        $this->markTestSkipped();
-    }
-
-    public function testPttl()
-    {
-        $this->markTestSkipped();
+        $this->client->set('foo', 'bar');
+        $this->client->expire('foo', 10);
+        $this->client->persist('foo');
+        $this->assertSame(-1, $this->client->ttl('foo'));
     }
 
     public function testTtl()
     {
-        $this->markTestSkipped();
+        $this->client->set('foo', 'bar');
+        $this->client->expire('foo', 20);
+
+        $ttl = $this->client->ttl('foo');
+        $this->assertGreaterThan(0, $ttl);
+        $this->assertLessThanOrEqual(20, $ttl);
+    }
+
+    public function testPreciseTtl()
+    {
+        $this->client->set('foo', 'bar');
+        $this->client->expire('foo', 20);
+
+        $ttl = $this->client->pttl('foo');
+        $this->assertGreaterThan(0, $ttl);
+        $this->assertLessThanOrEqual(20000, $ttl);
     }
 
     public function testRandomKey()
     {
-        $this->markTestSkipped();
+        $items = array(
+            'hello' => 'world',
+            'foo'   => 'bar',
+        );
+        $this->client->mset($items);
+
+        $this->assertContains($this->client->randomkey(), array_keys($items));
     }
 
     public function testRename()
     {
-        $this->markTestSkipped();
+        $this->client->set('foo', 'bar');
+        try {
+            $this->assertEquals('OK', $this->client->rename('foo', 'foo'));
+            $this->fail('rename should throw exception when source and destination are the same');
+        } catch (Predis\Response\ServerException $e) {
+            if ($e->getMessage() !== 'ERR source and destination objects are the same') {
+                throw $e;
+            }
+        }
+
+        $this->assertEquals('OK', $this->client->rename('foo', 'baz'));
+        $this->assertTrue($this->client->exists('baz'));
+        $this->assertFalse($this->client->exists('foo'));
     }
 
     public function testRenameNx()
     {
-        $this->markTestSkipped();
+        $this->client->set('hello', 'world');
+        $this->client->set('foo', 'bar');
+        try {
+            $this->assertEquals('OK', $this->client->renamenx('foo', 'foo'));
+            $this->fail('rename should throw exception when source and destination are the same');
+        } catch (Predis\Response\ServerException $e) {
+            if ($e->getMessage() !== 'ERR source and destination objects are the same') {
+                throw $e;
+            }
+        }
+
+        $this->assertFalse($this->client->renamenx('foo', 'hello'));
+
+        $this->assertEquals('OK', $this->client->rename('foo', 'baz'));
+        $this->assertTrue($this->client->exists('baz'));
+        $this->assertFalse($this->client->exists('foo'));
     }
 
     public function testRestore()
+    {
+        $this->markTestSkipped();
+    }
+
+    public function testScan()
     {
         $this->markTestSkipped();
     }
@@ -114,7 +223,6 @@ class PredisTest extends \PHPUnit_Framework_TestCase
     {
         $this->markTestSkipped();
     }
-
 
     //endregion
 
