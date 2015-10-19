@@ -141,9 +141,10 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->client->set('foo', 'bar');
         $this->client->expire('foo', 20);
 
-        $ttl = $this->client->ttl('foo');
-        $this->assertGreaterThan(0, $ttl);
-        $this->assertLessThanOrEqual(20, $ttl);
+        $this->assertThat(
+            $this->client->ttl('foo'),
+            $this->logicalAnd($this->greaterThan(0), $this->lessThanOrEqual(20))
+        );
     }
 
     public function testPreciseTtl()
@@ -151,9 +152,10 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->client->set('foo', 'bar');
         $this->client->expire('foo', 20);
 
-        $ttl = $this->client->pttl('foo');
-        $this->assertGreaterThan(0, $ttl);
-        $this->assertLessThanOrEqual(20000, $ttl);
+        $this->assertThat(
+            $this->client->pttl('foo'),
+            $this->logicalAnd($this->greaterThan(0), $this->lessThanOrEqual(20000))
+        );
     }
 
     public function testRandomKey()
@@ -230,7 +232,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     public function testAppend()
     {
-        $this->markTestSkipped();
+        $this->assertSame(5, $this->client->append('foo', 'Hello'));
+        $this->assertSame(11, $this->client->append('foo', ' World'));
+        $this->assertSame('Hello World', $this->client->get('foo'));
     }
 
     public function testBitCount()
@@ -245,12 +249,14 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     public function testDecrement()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(-1, $this->client->decr('foo'));
+        $this->assertEquals(-2, $this->client->decr('foo'));
     }
 
     public function testDecrementBy()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(-2, $this->client->decrby('foo', 2));
+        $this->assertEquals(-4, $this->client->decrby('foo', 2));
     }
 
     public function testGetBit()
@@ -260,52 +266,104 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     public function testGetRange()
     {
-        $this->markTestSkipped();
+        $this->assertSame('', $this->client->getrange('foo', 0, -1));
+        $this->client->set('foo', 'Hello World');
+        $this->assertSame('ello Worl', $this->client->getrange('foo', 1, -2));
+        $this->assertSame('World', $this->client->getrange('foo', -5, -1));
     }
 
     public function testGetSet()
     {
-        $this->markTestSkipped();
+        $this->assertNull($this->client->getset('foo', 'bar'));
+        $this->assertSame('bar', $this->client->getset('foo', 'derp'));
+        $this->assertSame('derp', $this->client->get('foo'));
     }
 
     public function testIncrement()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(1, $this->client->incr('foo'));
+        $this->assertEquals(2, $this->client->incr('foo'));
     }
 
     public function testIncrementByFloat()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(1.5, $this->client->incrbyfloat('foo', 1.5));
+        $this->assertEquals(3.0, $this->client->incrbyfloat('foo', 1.5));
     }
 
     public function testIncrementBy()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(2, $this->client->incrby('foo', 2));
+        $this->assertEquals(4, $this->client->incrby('foo', 2));
     }
 
     public function testMultipleSet()
     {
-        $this->markTestSkipped();
+        $this->client->mset(array(
+            'foo'   => 'bar',
+            'hello' => 'world',
+        ));
+        $this->assertSame('bar', $this->client->get('foo'));
+        $this->assertSame('world', $this->client->get('hello'));
     }
 
     public function testMultipleGet()
     {
-        $this->markTestSkipped();
+        $this->client->mset(array(
+            'foo'   => 'bar',
+            'hello' => 'world',
+        ));
+        $this->assertEquals(array('bar', 'world'), $this->client->mget('foo', 'hello'));
     }
 
     public function testMultipleSetNx()
     {
-        $this->markTestSkipped();
+        $this->assertTrue($this->client->msetnx(array(
+            'foo'   => 'bar',
+            'hello' => 'world',
+        )));
+        $this->assertFalse($this->client->msetnx(array(
+            'foo' => 'baz',
+            'red' => 'blue',
+        )));
+        $this->assertSame('bar', $this->client->get('foo'));
+        $this->assertSame('world', $this->client->get('hello'));
+        $this->assertFalse($this->client->exists('red'));
     }
 
     public function testGet()
     {
-        $this->markTestSkipped();
+        $this->assertNull($this->client->get('foo'));
+        $this->client->set('foo', 'bar');
+        $this->assertSame('bar', $this->client->get('foo'));
     }
 
     public function testSet()
     {
-        $this->markTestSkipped();
+        $this->assertEquals('OK', $this->client->set('foo', 'bar'));
+        $this->assertEquals('OK', $this->client->set('foo', 'baz'));
+        $this->assertSame('baz', $this->client->get('foo'));
+
+        // EX expire time
+        $this->assertEquals('OK', $this->client->set('foo', 'bar', 'EX', 20));
+        $this->assertThat(
+            $this->client->ttl('foo'),
+            $this->logicalAnd($this->greaterThan(0), $this->lessThanOrEqual(20))
+        );
+
+        // PX expire time
+        $this->client->del('foo');
+        $this->assertEquals('OK', $this->client->set('foo', 'bar', 'PX', 20000));
+        $this->assertThat(
+            $this->client->ttl('foo'),
+            $this->logicalAnd($this->greaterThan(0), $this->lessThanOrEqual(20))
+        );
+
+        $this->client->del('foo');
+        $this->assertNull($this->client->set('foo', 'bar', 'XX'));
+        $this->assertEquals('OK', $this->client->set('foo', 'baz', 'NX'));
+        $this->assertNull($this->client->set('foo', 'blue', 'NX'));
+        $this->assertEquals('OK', $this->client->set('foo', 'red', 'XX'));
     }
 
     public function testSetBit()
@@ -315,22 +373,47 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     public function testSetEx()
     {
-        $this->markTestSkipped();
+        $this->assertEquals('OK', $this->client->setex('foo', 20, 'bar'));
+        $this->assertEquals('OK', $this->client->setex('foo', 20, 'baz'));
+        $this->assertSame('baz', $this->client->get('foo'));
+        $this->assertThat(
+            $this->client->ttl('foo'),
+            $this->logicalAnd($this->greaterThan(0), $this->lessThanOrEqual(20))
+        );
+    }
+
+    public function testPreciseSetEx()
+    {
+        $this->assertEquals('OK', $this->client->psetex('foo', 20000, 'bar'));
+        $this->assertEquals('OK', $this->client->psetex('foo', 20000, 'baz'));
+        $this->assertSame('baz', $this->client->get('foo'));
+        $this->assertThat(
+            $this->client->ttl('foo'),
+            $this->logicalAnd($this->greaterThan(0), $this->lessThanOrEqual(20))
+        );
     }
 
     public function testSetNx()
     {
-        $this->markTestSkipped();
+        $this->assertTrue($this->client->setnx('foo', 'bar'));
+        $this->assertFalse($this->client->setnx('foo', 'bar'));
     }
 
     public function testSetRange()
     {
-        $this->markTestSkipped();
+        $this->assertSame(9, $this->client->setrange('foo', 4, 'World'));
+        $this->assertSame("\0\0\0\0World", $this->client->get('foo'));
+
+        $this->client->set('foo', 'Hello World');
+        $this->assertSame(14, $this->client->setrange('foo', 6, 'Universe'));
+        $this->assertSame('Hello Universe', $this->client->get('foo'));
     }
 
     public function testStringLength()
     {
-        $this->markTestSkipped();
+        $this->assertSame(0, $this->client->strlen('foo'));
+        $this->client->set('foo', 'bar');
+        $this->assertSame(3, $this->client->strlen('foo'));
     }
 
     //endregion
