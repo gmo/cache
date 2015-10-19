@@ -300,32 +300,52 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     public function testListLeftPush()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(2, $this->client->lpush('foo', 'world', 'hello'));
+        $this->assertEquals(array('hello', 'world'), $this->client->lrange('foo', 0, -1));
+        $this->assertEquals(3, $this->client->lpush('foo', 'derp'));
+        $this->assertEquals(array('derp', 'hello', 'world'), $this->client->lrange('foo', 0, -1));
     }
 
     public function testListRightPush()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(2, $this->client->rpush('foo', 'hello', 'world'));
+        $this->assertEquals(array('hello', 'world'), $this->client->lrange('foo', 0, -1));
+        $this->assertEquals(3, $this->client->rpush('foo', 'derp'));
+        $this->assertEquals(array('hello', 'world', 'derp'), $this->client->lrange('foo', 0, -1));
     }
 
     public function testListLeftPushExists()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(0, $this->client->lpushx('foo', 'bar'));
+        $this->assertFalse($this->client->exists('foo'));
+        $this->client->lpush('foo', 'world');
+        $this->assertEquals(2, $this->client->lpushx('foo', 'hello'));
+        $this->assertEquals(array('hello', 'world'), $this->client->lrange('foo', 0, -1));
     }
 
     public function testListRightPushExists()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(0, $this->client->rpushx('foo', 'bar'));
+        $this->assertFalse($this->client->exists('foo'));
+        $this->client->rpush('foo', 'hello');
+        $this->assertEquals(2, $this->client->rpushx('foo', 'world'));
+        $this->assertEquals(array('hello', 'world'), $this->client->lrange('foo', 0, -1));
     }
 
     public function testListLeftPop()
     {
-        $this->markTestSkipped();
+        $this->assertNull($this->client->lpop('foo'));
+        $this->client->rpush('foo', 'A', 'B', 'C');
+        $this->assertSame('A', $this->client->lpop('foo'));
+        $this->assertEquals(array('B', 'C'), $this->client->lrange('foo', 0, -1));
     }
 
     public function testListRightPop()
     {
-        $this->markTestSkipped();
+        $this->assertNull($this->client->rpop('foo'));
+        $this->client->rpush('foo', 'A', 'B', 'C');
+        $this->assertSame('C', $this->client->rpop('foo'));
+        $this->assertEquals(array('A', 'B'), $this->client->lrange('foo', 0, -1));
     }
 
     public function testListBlockLeftPop()
@@ -340,42 +360,111 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     public function testListLength()
     {
-        $this->markTestSkipped();
+        $this->assertSame(0, $this->client->llen('foo'));
+        $this->client->rpush('foo', 'A', 'B', 'C');
+        $this->assertSame(3, $this->client->llen('foo'));
     }
 
     public function testListIndex()
     {
-        $this->markTestSkipped();
+        $this->assertNull($this->client->lindex('foo', 0));
+        $this->client->rpush('foo', 'A', 'B', 'C');
+
+        $this->assertSame('A', $this->client->lindex('foo', 0));
+        $this->assertSame('B', $this->client->lindex('foo', 1));
+        $this->assertSame('C', $this->client->lindex('foo', 2));
+        $this->assertSame('C', $this->client->lindex('foo', -1));
+        $this->assertSame('B', $this->client->lindex('foo', -2));
     }
 
     public function testListSet()
     {
-        $this->markTestSkipped();
+        try {
+            $this->assertFalse($this->client->lset('foo', 0, 'bar'));
+            $this->fail('lset on non-existent list should throw exception');
+        } catch (Predis\Response\ServerException $e) {
+            if ($e->getMessage() !== 'ERR no such key') {
+                $this->fail('Wrong exception was thrown');
+            }
+        }
+
+        $this->client->rpush('foo', 'A', 'B', 'C');
+        $this->assertEquals('OK', $this->client->lset('foo', 0, 'bar'));
+        $this->assertSame('bar', $this->client->lindex('foo', 0));
+
+        try {
+            $this->assertEquals('OK', $this->client->lset('foo', 100, 'bar'));
+            $this->fail('lset with index out of range should throw exception');
+        } catch (Predis\Response\ServerException $e) {
+            if ($e->getMessage() !== 'ERR index out of range') {
+                $this->fail('Wrong exception was thrown');
+            }
+        }
     }
 
     public function testListRange()
     {
-        $this->markTestSkipped();
+        $this->assertEquals(array(), $this->client->lrange('foo', 0, -1));
+        $this->client->rpush('foo', 'A', 'B', 'C');
+
+        $this->assertEquals(array('A'), $this->client->lrange('foo', 0, 0));
+        $this->assertEquals(array('A', 'B'), $this->client->lrange('foo', 0, 1));
+        $this->assertEquals(array('A', 'B', 'C'), $this->client->lrange('foo', 0, 2));
+        $this->assertEquals(array('A', 'B', 'C'), $this->client->lrange('foo', 0, -1));
+        $this->assertEquals(array('A', 'B'), $this->client->lrange('foo', 0, -2));
+        $this->assertEquals(array('B', 'C'), $this->client->lrange('foo', 1, -1));
+        $this->assertEquals(array('B', 'C'), $this->client->lrange('foo', -2, 2));
+        $this->assertEquals(array('B', 'C'), $this->client->lrange('foo', -2, -1));
     }
 
     public function testListTrim()
     {
-        $this->markTestSkipped();
+        $this->assertEquals('OK', $this->client->ltrim('foo', 0, -1));
+        $this->client->rpush('foo', 'A', 'B', 'C');
+
+        $this->assertEquals('OK', $this->client->ltrim('foo', 1, -1));
+        $this->assertEquals(array('B', 'C'), $this->client->lrange('foo', 0, -1));
+
+        $this->assertEquals('OK', $this->client->ltrim('foo', 0, -2));
+        $this->assertEquals(array('B'), $this->client->lrange('foo', 0, -1));
     }
 
     public function testListRemove()
     {
-        $this->markTestSkipped();
+        $this->assertSame(0, $this->client->lrem('foo', 0, 'A'));
+        $this->client->rpush('foo', 'A', 'B', 'C', 'A', 'A');
+        $this->assertSame(3, $this->client->lrem('foo', 0, 'A'));
+        $this->assertEquals(array('B', 'C'), $this->client->lrange('foo', 0, -1));
+
+        $this->client->rpush('foo', 'B');
+        $this->assertSame(1, $this->client->lrem('foo', -1, 'B'));
+        $this->assertEquals(array('B', 'C'), $this->client->lrange('foo', 0, -1));
+
+        $this->client->rpush('foo', 'B');
+        $this->assertSame(1, $this->client->lrem('foo', 1, 'B'));
+        $this->assertEquals(array('C', 'B'), $this->client->lrange('foo', 0, -1));
     }
 
     public function testListInsert()
     {
-        $this->markTestSkipped();
+        $this->assertSame(0, $this->client->linsert('foo', 'after', 'hello', 'world'));
+        $this->client->rpush('foo', 'hello', 'bar');
+
+        $this->assertSame(3, $this->client->linsert('foo', 'after', 'hello', 'world'));
+        $this->assertEquals(array('hello', 'world', 'bar'), $this->client->lrange('foo', 0, -1));
+
+        $this->assertSame(4, $this->client->linsert('foo', 'before', 'bar', 'baz'));
+        $this->assertEquals(array('hello', 'world', 'baz', 'bar'), $this->client->lrange('foo', 0, -1));
     }
 
     public function testListRightPopLeftPush()
     {
-        $this->markTestSkipped();
+        $this->assertNull($this->client->rpoplpush('foo', 'bar'));
+        $this->client->rpush('foo', 'A', 'B');
+        $this->client->rpush('bar', 'C', 'D');
+        $this->assertEquals('B', $this->client->rpoplpush('foo', 'bar'));
+        $this->assertEquals(array('A'), $this->client->lrange('foo', 0, -1));
+        $this->assertEquals(array('B', 'C', 'D'), $this->client->lrange('bar', 0, -1));
     }
 
     public function testListBlockRightPopLeftPush()
