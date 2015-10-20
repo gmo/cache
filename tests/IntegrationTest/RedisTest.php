@@ -1,10 +1,8 @@
 <?php
-namespace IntegrationTest;
+namespace GMO\Cache\Tests\IntegrationTest;
 
 use GMO\Cache\Redis;
 use GMO\Cache\Exception\ConnectionFailureException;
-
-require_once __DIR__ . "/../../vendor/autoload.php";
 
 class RedisTest extends \PHPUnit_Framework_TestCase {
 

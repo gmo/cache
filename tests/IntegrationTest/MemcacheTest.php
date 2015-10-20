@@ -1,9 +1,7 @@
 <?php
-namespace IntegrationTest;
+namespace GMO\Cache\Tests\IntegrationTest;
 
 use GMO\Cache\Memcache;
-
-require_once __DIR__ . "/../../vendor/autoload.php";
 
 class MemcacheTest extends \PHPUnit_Framework_TestCase {
 
