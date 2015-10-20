@@ -30,6 +30,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     //region Keys
 
+    /**
+     * @group redis-keys
+     */
     public function testDelete()
     {
         $this->client->set('foo', 'bar');
@@ -47,11 +50,17 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($this->client->exists('hello'));
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testDump()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testExists()
     {
         $this->assertFalse($this->client->exists('foo'));
@@ -59,58 +68,90 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($this->client->exists('foo'));
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testExpire()
     {
+        $this->assertFalse($this->client->expire('foo', 1));
+
         $this->client->set('foo', 'bar');
         $this->assertTrue($this->client->expire('foo', 1));
         usleep(1.5e+6);
         $this->assertFalse($this->client->exists('foo'));
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testPreciseExpire()
     {
+        $this->assertFalse($this->client->expire('foo', 1));
+
         $this->client->set('foo', 'bar');
         $this->assertTrue($this->client->pexpire('foo', 500));
         usleep(1.5e+6);
         $this->assertFalse($this->client->exists('foo'));
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testExpireAt()
     {
+        $this->assertFalse($this->client->expire('foo', 1));
+
         $this->client->set('foo', 'bar');
-        $this->client->expireat('foo', time() + 1);
+        $this->assertTrue($this->client->expireat('foo', time() + 1));
         usleep(1.5e+6);
         $this->assertFalse($this->client->exists('foo'));
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testPreciseExpireAt()
     {
+        $this->assertFalse($this->client->expire('foo', 1));
+
         $this->client->set('foo', 'bar');
         $this->client->pexpireat('foo', (time() + 1) * 1000);
         usleep(1.5e+6);
         $this->assertFalse($this->client->exists('foo'));
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testKeys()
     {
-        $this->assertEquals(array(), $this->client->keys('derp'));
+        //$this->assertEquals(array(), $this->client->keys('derp'));
 
-        $this->client->mset(array(
+        $items = array(
+            'hello'       => 1,
+            'hallo'       => 1,
+            'hxllo'       => 1,
+            'hllo'        => 1,
+            'heeeello'    => 1,
+            'hillo'       => 1,
+            'hbllo'       => 1,
             'color:red'   => 'red',
             'color:blue'  => 'blue',
             'color:green' => 'green',
-            'foo'         => 'bar',
-        ));
-
-        $expected = array(
-            'color:red',
-            'color:blue',
-            'color:green',
+            '[ns]foo'     => 'bar',
         );
-        $this->assertArraySimilar($expected, $this->client->keys('color*'));
+        $this->client->mset($items);
 
-        $expected[] = 'foo';
-        $this->assertArraySimilar($expected, $this->client->keys('*'));
+        $this->assertArraySimilar(array('hello', 'hallo', 'hxllo', 'hbllo', 'hillo'), $this->client->keys('h?llo'));
+        $this->assertArraySimilar(array('hllo', 'hello', 'hallo', 'hxllo', 'hillo', 'hbllo', 'heeeello'), $this->client->keys('h*llo'));
+        $this->assertArraySimilar(array('hello', 'hallo'), $this->client->keys('h[ae]llo'));
+        $this->assertArraySimilar(array('hallo', 'hillo', 'hbllo', 'hxllo'), $this->client->keys('h[^e]llo'));
+        $this->assertArraySimilar(array('hallo', 'hbllo'), $this->client->keys('h[a-b]llo'));
+        $this->assertArraySimilar(array('color:green'), $this->client->keys('*en'));
+        $this->assertArraySimilar(array('[ns]foo'), $this->client->keys('\[ns\]*'));
+        $this->assertArraySimilar(array('color:red'), $this->client->keys('color:red'));
+
+        $this->assertArraySimilar(array_keys($items), $this->client->keys('*'));
     }
 
     protected function assertArraySimilar(array $expected, array $actual)
@@ -118,46 +159,74 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(array_diff($expected, $actual), array_diff($actual, $expected));
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testMove()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testObject()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testPersist()
     {
+        $this->assertFalse($this->client->persist('foo'));
+
         $this->client->set('foo', 'bar');
+        $this->assertFalse($this->client->persist('foo'));
+
         $this->client->expire('foo', 10);
-        $this->client->persist('foo');
+        $this->assertTrue($this->client->persist('foo'));
         $this->assertSame(-1, $this->client->ttl('foo'));
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testTtl()
     {
-        $this->client->set('foo', 'bar');
-        $this->client->expire('foo', 20);
+        $this->assertSame(-2, $this->client->ttl('foo'));
 
+        $this->client->set('foo', 'bar');
+        $this->assertSame(-1, $this->client->ttl('foo'));
+
+        $this->client->expire('foo', 20);
         $this->assertThat(
             $this->client->ttl('foo'),
             $this->logicalAnd($this->greaterThan(0), $this->lessThanOrEqual(20))
         );
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testPreciseTtl()
     {
-        $this->client->set('foo', 'bar');
-        $this->client->expire('foo', 20);
+        $this->assertSame(-2, $this->client->ttl('foo'));
 
+        $this->client->set('foo', 'bar');
+        $this->assertSame(-1, $this->client->ttl('foo'));
+
+        $this->client->expire('foo', 20);
         $this->assertThat(
             $this->client->pttl('foo'),
             $this->logicalAnd($this->greaterThan(0), $this->lessThanOrEqual(20000))
         );
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testRandomKey()
     {
         $items = array(
@@ -169,8 +238,20 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertContains($this->client->randomkey(), array_keys($items));
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testRename()
     {
+        try {
+            $this->client->rename('foo', 'bar');
+            $this->fail('rename should throw exception when source does not exist');
+        } catch (Predis\Response\ServerException $e) {
+            if ($e->getMessage() !== 'ERR no such key') {
+                throw $e;
+            }
+        }
+
         $this->client->set('foo', 'bar');
         try {
             $this->assertEquals('OK', $this->client->rename('foo', 'foo'));
@@ -186,8 +267,20 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($this->client->exists('foo'));
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testRenameNx()
     {
+        try {
+            $this->client->renamenx('foo', 'bar');
+            $this->fail('rename should throw exception when source does not exist');
+        } catch (Predis\Response\ServerException $e) {
+            if ($e->getMessage() !== 'ERR no such key') {
+                throw $e;
+            }
+        }
+
         $this->client->set('hello', 'world');
         $this->client->set('foo', 'bar');
         try {
@@ -201,26 +294,38 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
         $this->assertFalse($this->client->renamenx('foo', 'hello'));
 
-        $this->assertEquals('OK', $this->client->rename('foo', 'baz'));
+        $this->assertTrue($this->client->renamenx('foo', 'baz'));
         $this->assertTrue($this->client->exists('baz'));
         $this->assertFalse($this->client->exists('foo'));
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testRestore()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testScan()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testSort()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-keys
+     */
     public function testType()
     {
         $this->markTestSkipped();
@@ -230,6 +335,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     //region Strings
 
+    /**
+     * @group redis-strings
+     */
     public function testAppend()
     {
         $this->assertSame(5, $this->client->append('foo', 'Hello'));
@@ -237,33 +345,51 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('Hello World', $this->client->get('foo'));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testBitCount()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testBitOp()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testDecrement()
     {
         $this->assertEquals(-1, $this->client->decr('foo'));
         $this->assertEquals(-2, $this->client->decr('foo'));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testDecrementBy()
     {
         $this->assertEquals(-2, $this->client->decrby('foo', 2));
         $this->assertEquals(-4, $this->client->decrby('foo', 2));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testGetBit()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testGetRange()
     {
         $this->assertSame('', $this->client->getrange('foo', 0, -1));
@@ -272,6 +398,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('World', $this->client->getrange('foo', -5, -1));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testGetSet()
     {
         $this->assertNull($this->client->getset('foo', 'bar'));
@@ -279,34 +408,49 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('derp', $this->client->get('foo'));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testIncrement()
     {
         $this->assertEquals(1, $this->client->incr('foo'));
         $this->assertEquals(2, $this->client->incr('foo'));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testIncrementByFloat()
     {
         $this->assertEquals(1.5, $this->client->incrbyfloat('foo', 1.5));
         $this->assertEquals(3.0, $this->client->incrbyfloat('foo', 1.5));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testIncrementBy()
     {
         $this->assertEquals(2, $this->client->incrby('foo', 2));
         $this->assertEquals(4, $this->client->incrby('foo', 2));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testMultipleSet()
     {
-        $this->client->mset(array(
+        $this->assertEquals('OK', $this->client->mset(array(
             'foo'   => 'bar',
             'hello' => 'world',
-        ));
+        )));
         $this->assertSame('bar', $this->client->get('foo'));
         $this->assertSame('world', $this->client->get('hello'));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testMultipleGet()
     {
         $this->client->mset(array(
@@ -316,6 +460,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('bar', 'world'), $this->client->mget('foo', 'hello'));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testMultipleSetNx()
     {
         $this->assertTrue($this->client->msetnx(array(
@@ -331,6 +478,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($this->client->exists('red'));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testGet()
     {
         $this->assertNull($this->client->get('foo'));
@@ -338,6 +488,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('bar', $this->client->get('foo'));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testSet()
     {
         $this->assertEquals('OK', $this->client->set('foo', 'bar'));
@@ -366,11 +519,17 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('OK', $this->client->set('foo', 'red', 'XX'));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testSetBit()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testSetEx()
     {
         $this->assertEquals('OK', $this->client->setex('foo', 20, 'bar'));
@@ -382,6 +541,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testPreciseSetEx()
     {
         $this->assertEquals('OK', $this->client->psetex('foo', 20000, 'bar'));
@@ -393,12 +555,18 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testSetNx()
     {
         $this->assertTrue($this->client->setnx('foo', 'bar'));
         $this->assertFalse($this->client->setnx('foo', 'bar'));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testSetRange()
     {
         $this->assertSame(9, $this->client->setrange('foo', 4, 'World'));
@@ -407,8 +575,15 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->client->set('foo', 'Hello World');
         $this->assertSame(14, $this->client->setrange('foo', 6, 'Universe'));
         $this->assertSame('Hello Universe', $this->client->get('foo'));
+
+        $this->client->set('foo', 'bar');
+        $this->assertSame(9, $this->client->setrange('foo', 6, 'baz'));
+        $this->assertSame("bar\0\0\0baz", $this->client->get('foo'));
     }
 
+    /**
+     * @group redis-strings
+     */
     public function testStringLength()
     {
         $this->assertSame(0, $this->client->strlen('foo'));
@@ -420,6 +595,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
 
     //region Hashes
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashSet()
     {
         $this->assertTrue($this->client->hset('foo', 'bar', 'hello'));
@@ -429,6 +607,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('world', $this->client->hget('foo', 'bar'));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashSetNx()
     {
         $this->assertTrue($this->client->hsetnx('foo', 'bar', 'hello'));
@@ -438,6 +619,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('hello', $this->client->hget('foo', 'bar'));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashGet()
     {
         $this->assertNull($this->client->hget('foo', 'bar'));
@@ -446,6 +630,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('hello', $this->client->hget('foo', 'bar'));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashLength()
     {
         $this->assertSame(0, $this->client->hlen('foo'));
@@ -455,6 +642,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(2, $this->client->hlen('foo'));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashDelete()
     {
         $this->assertSame(0, $this->client->hdel('foo', 'bar'));
@@ -467,6 +657,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('red' => 'blue'), $this->client->hgetall('foo'));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashKeys()
     {
         $this->assertSame(array(), $this->client->hkeys('foo'));
@@ -478,6 +671,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('hello', 'bar', 'red'), $this->client->hkeys('foo'));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashValues()
     {
         $this->assertSame(array(), $this->client->hkeys('foo'));
@@ -489,6 +685,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('world', 'baz', 'blue'), $this->client->hvals('foo'));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashGetAll()
     {
         $this->assertSame(array(), $this->client->hgetall('foo'));
@@ -505,6 +704,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $this->client->hgetall('foo'));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashExists()
     {
         $this->assertFalse($this->client->hexists('foo', 'hello'));
@@ -512,28 +714,40 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($this->client->hexists('foo', 'hello'));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashIncrementBy()
     {
         $this->assertSame(2, $this->client->hincrby('foo', 'bar', 2));
         $this->assertSame(4, $this->client->hincrby('foo', 'bar', 2));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashIncrementByFloat()
     {
         $this->assertEquals(1.5, $this->client->hincrbyfloat('foo', 'bar', 1.5));
         $this->assertEquals(3.0, $this->client->hincrbyfloat('foo', 'bar', 1.5));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashMultipleSet()
     {
         $expected = array(
             'hello' => 'world',
             'red'   => 'blue',
         );
-        $this->client->hmset('foo', $expected);
+        $this->assertEquals('OK', $this->client->hmset('foo', $expected));
         $this->assertEquals($expected, $this->client->hgetall('foo'));
     }
 
+    /**
+     * @group redis-hashes
+     */
     public function testHashMultipleGet()
     {
         $expected = array(
@@ -546,10 +760,21 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('world', 'blue'), $this->client->hmget('foo', array('hello', 'red')));
     }
 
+    /**
+     * @group redis-hashes
+     */
+    public function testHashScan()
+    {
+        $this->markTestSkipped();
+    }
+
     //endregion
 
     //region Lists
 
+    /**
+     * @group redis-lists
+     */
     public function testListLeftPush()
     {
         $this->assertEquals(2, $this->client->lpush('foo', 'world', 'hello'));
@@ -558,6 +783,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('derp', 'hello', 'world'), $this->client->lrange('foo', 0, -1));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListRightPush()
     {
         $this->assertEquals(2, $this->client->rpush('foo', 'hello', 'world'));
@@ -566,6 +794,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('hello', 'world', 'derp'), $this->client->lrange('foo', 0, -1));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListLeftPushExists()
     {
         $this->assertEquals(0, $this->client->lpushx('foo', 'bar'));
@@ -575,6 +806,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('hello', 'world'), $this->client->lrange('foo', 0, -1));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListRightPushExists()
     {
         $this->assertEquals(0, $this->client->rpushx('foo', 'bar'));
@@ -584,6 +818,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('hello', 'world'), $this->client->lrange('foo', 0, -1));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListLeftPop()
     {
         $this->assertNull($this->client->lpop('foo'));
@@ -592,6 +829,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('B', 'C'), $this->client->lrange('foo', 0, -1));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListRightPop()
     {
         $this->assertNull($this->client->rpop('foo'));
@@ -600,16 +840,25 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('A', 'B'), $this->client->lrange('foo', 0, -1));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListBlockLeftPop()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListBlockRightPop()
     {
         $this->markTestSkipped();
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListLength()
     {
         $this->assertSame(0, $this->client->llen('foo'));
@@ -617,6 +866,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(3, $this->client->llen('foo'));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListIndex()
     {
         $this->assertNull($this->client->lindex('foo', 0));
@@ -629,6 +881,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('B', $this->client->lindex('foo', -2));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListSet()
     {
         try {
@@ -654,6 +909,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         }
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListRange()
     {
         $this->assertEquals(array(), $this->client->lrange('foo', 0, -1));
@@ -669,6 +927,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('B', 'C'), $this->client->lrange('foo', -2, -1));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListTrim()
     {
         $this->assertEquals('OK', $this->client->ltrim('foo', 0, -1));
@@ -681,6 +942,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('B'), $this->client->lrange('foo', 0, -1));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListRemove()
     {
         $this->assertSame(0, $this->client->lrem('foo', 0, 'A'));
@@ -697,6 +961,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('C', 'B'), $this->client->lrange('foo', 0, -1));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListInsert()
     {
         $this->assertSame(0, $this->client->linsert('foo', 'after', 'hello', 'world'));
@@ -709,6 +976,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('hello', 'world', 'baz', 'bar'), $this->client->lrange('foo', 0, -1));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListRightPopLeftPush()
     {
         $this->assertNull($this->client->rpoplpush('foo', 'bar'));
@@ -719,6 +989,9 @@ class PredisTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('B', 'C', 'D'), $this->client->lrange('bar', 0, -1));
     }
 
+    /**
+     * @group redis-lists
+     */
     public function testListBlockRightPopLeftPush()
     {
         $this->markTestSkipped();
