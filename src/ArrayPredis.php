@@ -3,70 +3,20 @@
 namespace GMO\Cache;
 
 use GMO\Common\Collections\ArrayCollection;
-use GMO\Common\String;
 use Predis;
 use Predis\Command;
 use Predis\Command\CommandInterface;
 use Predis\NotSupportedException;
 
 /**
- * @method int sadd($key, array $members)
- * @method int scard($key)
- * @method array sdiff(array $keys)
- * @method int sdiffstore($destination, array $keys)
- * @method array sinter(array $keys)
- * @method int sinterstore($destination, array $keys)
- * @method int sismember($key, $member)
- * @method array smembers($key)
- * @method int smove($source, $destination, $member)
- * @method string spop($key)
- * @method string srandmember($key, $count = null)
- * @method int srem($key, $member)
- * @method array sscan($key, $cursor, array $options = null)
- * @method array sunion(array $keys)
- * @method int sunionstore($destination, array $keys)
- * @method int zadd($key, array $membersAndScoresDictionary)
- * @method int zcard($key)
- * @method string zcount($key, $min, $max)
- * @method string zincrby($key, $increment, $member)
- * @method int zinterstore($destination, array $keys, array $options = null)
- * @method array zrange($key, $start, $stop, array $options = null)
- * @method array zrangebyscore($key, $min, $max, array $options = null)
- * @method int zrank($key, $member)
- * @method int zrem($key, $member)
- * @method int zremrangebyrank($key, $start, $stop)
- * @method int zremrangebyscore($key, $min, $max)
- * @method array zrevrange($key, $start, $stop, array $options = null)
- * @method array zrevrangebyscore($key, $min, $max, array $options = null)
- * @method int zrevrank($key, $member)
- * @method int zunionstore($destination, array $keys, array $options = null)
- * @method string zscore($key, $member)
- * @method array zscan($key, $cursor, array $options = null)
- * @method array zrangebylex($key, $start, $stop, array $options = null)
- * @method int zremrangebylex($key, $min, $max)
- * @method int zlexcount($key, $min, $max)
- * @method int pfadd($key, array $elements)
- * @method mixed pfmerge($destinationKey, array $sourceKeys)
- * @method int pfcount(array $keys)
- * @method mixed pubsub($subcommand, $argument)
- * @method mixed eval($script, $numkeys, $keyOrArg1 = null, $keyOrArgN = null)
- * @method mixed evalsha($script, $numkeys, $keyOrArg1 = null, $keyOrArgN = null)
- * @method mixed script($subcommand, $argument = null)
- * @method mixed auth($password)
- * @method string echo ($message)
- * @method mixed select($database)
- * @method mixed bgrewriteaof()
- * @method mixed bgsave()
- * @method mixed client($subcommand, $argument = null)
- * @method mixed config($subcommand, $argument = null)
- * @method int dbsize()
- * @method array info($section = null)
- * @method int lastsave()
- * @method mixed save()
- * @method mixed slaveof($host, $port)
- * @method mixed slowlog($subcommand, $argument = null)
- * @method array time()
- * @method array command()
+ * An array implementation for Predis.
+ *
+ * Only a subset of the functionality is currently implemented.
+ *
+ * Most of Keys, Strings, Hashes, Lists are implemented,
+ * with the exception of bit, blocking, and misc debugging methods.
+ *
+ * Basically anything we use in code is implemented.
  */
 class ArrayPredis implements Predis\ClientInterface
 {
