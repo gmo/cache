@@ -24,6 +24,8 @@ class ArrayPredis implements Predis\ClientInterface
     protected $data;
     /** @var ArrayCollection */
     protected $expiring;
+    /** @var ArrayCollection */
+    protected $pubSub;
 
     /**
      * Constructor.
@@ -31,6 +33,7 @@ class ArrayPredis implements Predis\ClientInterface
     public function __construct()
     {
         $this->flushdb();
+        $this->pubSub = new ArrayCollection();
     }
 
     public function flushdb()
@@ -930,6 +933,8 @@ class ArrayPredis implements Predis\ClientInterface
         throw new NotSupportedException();
     }
 
+    //region Pub/Sub
+
     public function subscribe($channels, $callback)
     {
         throw new NotSupportedException();
@@ -942,8 +947,22 @@ class ArrayPredis implements Predis\ClientInterface
 
     public function publish($channel, $message)
     {
-        throw new NotSupportedException();
+        if (!$this->pubSub->containsKey($channel)) {
+            $this->pubSub[$channel] = new ArrayCollection();
+        }
+        $this->pubSub[$channel][] = $message;
     }
+
+    public function getMessages($channel)
+    {
+        if (!$this->pubSub->containsKey($channel)) {
+            return new ArrayCollection();
+        }
+
+        return $this->pubSub[$channel];
+    }
+
+    //endregion
 
 
     public function executeCommand(CommandInterface $command)
