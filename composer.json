@@ -2,8 +2,9 @@
 	"name": "gmo/cache",
 	"description": "Common cache abstraction and utilities",
 	"require": {
-		"predis/predis": "^1.0",
-		"alexey-kupershtokh/predis-phpdoc": "*"
+		"alexey-kupershtokh/predis-phpdoc": "*",
+		"gmo/common": "^1.26@dev",
+		"predis/predis": "^1.0"
 	},
 	"require-dev": {
 		"gmo/dependency-injection": "~1.0",
