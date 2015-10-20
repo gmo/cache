@@ -10,23 +10,6 @@ use Predis\Command\CommandInterface;
 use Predis\NotSupportedException;
 
 /**
- * @method array blpop(array $keys, $timeout)
- * @method array brpop(array $keys, $timeout)
- * @method array brpoplpush($source, $destination, $timeout)
- * @method string lindex($key, $index)
- * @method int linsert($key, $whence, $pivot, $value)
- * @method int llen($key)
- * @method string lpop($key)
- * @method int lpush($key, array $values)
- * @method int lpushx($key, $value)
- * @method array lrange($key, $start, $stop)
- * @method int lrem($key, $count, $value)
- * @method mixed lset($key, $index, $value)
- * @method mixed ltrim($key, $start, $stop)
- * @method string rpop($key)
- * @method string rpoplpush($source, $destination)
- * @method int rpush($key, array $values)
- * @method int rpushx($key, $value)
  * @method int sadd($key, array $members)
  * @method int scard($key)
  * @method array sdiff(array $keys)
@@ -77,8 +60,6 @@ use Predis\NotSupportedException;
  * @method mixed client($subcommand, $argument = null)
  * @method mixed config($subcommand, $argument = null)
  * @method int dbsize()
- * @method mixed flushall()
- * @method mixed flushdb()
  * @method array info($section = null)
  * @method int lastsave()
  * @method mixed save()
@@ -89,7 +70,9 @@ use Predis\NotSupportedException;
  */
 class ArrayPredis implements Predis\ClientInterface
 {
+    /** @var ArrayCollection */
     protected $data;
+    /** @var ArrayCollection */
     protected $expiring;
 
     /**
@@ -97,8 +80,18 @@ class ArrayPredis implements Predis\ClientInterface
      */
     public function __construct()
     {
+        $this->flushdb();
+    }
+
+    public function flushdb()
+    {
         $this->data = new ArrayCollection();
         $this->expiring = new ArrayCollection();
+    }
+
+    public function flushall()
+    {
+        $this->flushdb();
     }
 
     //region Keys
@@ -381,7 +374,7 @@ class ArrayPredis implements Predis\ClientInterface
     {
         $value = $this->get($key);
         if ($end < 0) {
-            $end = mb_strlen($value) + $end;
+            $end += mb_strlen($value);
         }
         return mb_substr($this->get($key), $start, $end);
     }
@@ -702,6 +695,266 @@ class ArrayPredis implements Predis\ClientInterface
 
     //endregion
 
+    //region Lists
+
+    public function lpush($key, $values)
+    {
+        if (!is_array($values)) {
+            $values = func_get_args();
+            array_shift($values);
+        }
+
+        $this->ensureSubCollection($key);
+
+        foreach ($values as $value) {
+            $this->data[$key]->prepend($value);
+        }
+
+        return $this->data[$key]->count();
+    }
+
+    public function lpushx($key, $value)
+    {
+        if (!$this->isTraversable($key) || $this->data[$key]->isEmpty()) {
+            return 0;
+        }
+
+        $this->data[$key]->prepend($value);
+
+        return $this->data[$key]->count();
+    }
+    
+    public function rpush($key, $values)
+    {
+        if (!is_array($values)) {
+            $values = func_get_args();
+            array_shift($values);
+        }
+
+        $this->ensureSubCollection($key);
+
+        foreach ($values as $value) {
+            $this->data[$key]->add($value);
+        }
+
+        return $this->data[$key]->count();
+    }
+
+    public function rpushx($key, $value)
+    {
+        if (!$this->isTraversable($key) || $this->data[$key]->isEmpty()) {
+            return 0;
+        }
+
+        $this->data[$key]->add($value);
+
+        return $this->data[$key]->count();
+    }
+
+    public function lpop($key)
+    {
+        if (!$this->isTraversable($key)) {
+            return null;
+        }
+
+        $value = $this->data[$key]->removeFirst();
+
+        $this->resetListIndex($key);
+
+        return $value;
+    }
+
+    public function rpop($key)
+    {
+        if (!$this->isTraversable($key)) {
+            return null;
+        }
+
+        $value = $this->data[$key]->removeLast();
+
+        $this->resetListIndex($key);
+
+        return $value;
+    }
+
+    public function blpop(array $keys, $timeout)
+    {
+        throw new NotSupportedException();
+    }
+
+    public function brpop(array $keys, $timeout)
+    {
+        throw new NotSupportedException();
+    }
+
+    public function llen($key)
+    {
+        if (!$this->isTraversable($key)) {
+            return 0;
+        }
+
+        return $this->data[$key]->count();
+    }
+
+    public function lindex($key, $index)
+    {
+        if (!$this->isTraversable($key)) {
+            return null;
+        }
+        $sub = $this->data[$key];
+
+        if ($index < 0) {
+            $index += $sub->count();
+        }
+
+        return $sub->get($index);
+    }
+
+    public function lset($key, $index, $value)
+    {
+        if (!$this->isTraversable($key)) {
+            throw new Predis\Response\ServerException('ERR no such key');
+        }
+
+        $sub = $this->data[$key];
+
+        if ($index < 0) {
+            $index += $sub->count();
+        }
+
+        if (!$sub->containsKey($index)) {
+            throw new Predis\Response\ServerException('ERR index out of range');
+        }
+
+        $sub[$index] = $value;
+
+        $this->resetListIndex($key);
+
+        return 'OK';
+    }
+
+    public function lrange($key, $start, $stop)
+    {
+        if (!$this->isTraversable($key)) {
+            return array();
+        }
+
+        $sub = $this->data[$key];
+
+        if ($start < 0) {
+            $start += $sub->count();
+        }
+        if ($stop < 0) {
+            $stop += $sub->count();
+        }
+
+        return $sub->slice($start, $stop + 1)->getValues()->toArray();
+    }
+
+    public function ltrim($key, $start, $stop)
+    {
+        if (!$this->isTraversable($key)) {
+            return 'OK';
+        }
+
+        $this->data[$key] = new ArrayCollection($this->lrange($key, $start, $stop));
+
+        return 'OK';
+    }
+
+    public function lrem($key, $count, $value)
+    {
+        if (!$this->isTraversable($key)) {
+            return 0;
+        }
+
+        $sub = $this->data[$key];
+
+        $numToRemove = abs($count);
+        $removed = 0;
+        if ($count < 0) {
+            for ($i = $sub->count() - 1; $i >= 0; $i--) {
+                if ($numToRemove === 0) {
+                    break;
+                }
+                if ($sub->get($i) === $value) {
+                    $sub->remove($i);
+                    $removed++;
+                    $numToRemove--;
+                }
+            }
+        } elseif ($count > 0) {
+            for ($i = 0; $i >= 0; $i++) {
+                if ($numToRemove === 0) {
+                    break;
+                }
+                if ($sub->get($i) === $value) {
+                    $sub->remove($i);
+                    $removed++;
+                    $numToRemove--;
+                }
+            }
+        } else {
+            foreach ($sub as $index => $val) {
+                if ($value === $val) {
+                    $sub->remove($index);
+                    $removed++;
+                }
+            }
+        }
+
+        if ($removed > 0) {
+            $this->resetListIndex($key);
+        }
+
+        return $removed;
+    }
+
+    public function linsert($key, $whence, $pivot, $value)
+    {
+        if (!$this->isTraversable($key)) {
+            return 0;
+        }
+
+        $whence = strtolower($whence);
+
+        $sub = $this->data[$key];
+
+        $index = $sub->indexOf($pivot);
+        if ($index === false) {
+            return -1;
+        }
+
+        if ($whence === 'before') {
+            $firstPart = $sub->slice(0, $index);
+            $secondPart = $sub->slice($index);
+        } else {
+            $firstPart = $sub->slice(0, $index + 1);
+            $secondPart = $sub->slice($index + 1);
+        }
+
+        $this->data[$key] = ArrayCollection::create($firstPart)->add($value)->merge($secondPart);
+
+        return $this->data[$key]->count();
+    }
+
+    public function rpoplpush($source, $destination)
+    {
+        $value = $this->rpop($source);
+        if ($value !== null) {
+            $this->lpush($destination, $value);
+        }
+
+        return $value;
+    }
+
+    public function brpoplpush($source, $destination, $timeout)
+    {
+        throw new NotSupportedException();
+    }
+
+    //endregion
+
     public function multi()
     {
         throw new NotSupportedException();
@@ -786,6 +1039,13 @@ class ArrayPredis implements Predis\ClientInterface
         throw new NotSupportedException();
     }
 
+    protected function ensureSubCollection($key)
+    {
+        if (!$this->isTraversable($key)) {
+            $this->data[$key] = new ArrayCollection();
+        }
+    }
+
     protected function isTraversable($key)
     {
         return $this->doExists($key) && ArrayCollection::isTraversable($this->data[$key]);
@@ -798,5 +1058,10 @@ class ArrayPredis implements Predis\ClientInterface
         }
 
         return $args;
+    }
+
+    protected function resetListIndex($key)
+    {
+        $this->data[$key] = $this->data[$key]->getValues();
     }
 }

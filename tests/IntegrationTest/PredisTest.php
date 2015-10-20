@@ -887,7 +887,7 @@ class PredisTest extends \PHPUnit_Framework_TestCase
     public function testListSet()
     {
         try {
-            $this->assertFalse($this->client->lset('foo', 0, 'bar'));
+            $this->client->lset('foo', 0, 'bar');
             $this->fail('lset on non-existent list should throw exception');
         } catch (Predis\Response\ServerException $e) {
             if ($e->getMessage() !== 'ERR no such key') {
@@ -967,7 +967,11 @@ class PredisTest extends \PHPUnit_Framework_TestCase
     public function testListInsert()
     {
         $this->assertSame(0, $this->client->linsert('foo', 'after', 'hello', 'world'));
+        $this->assertEquals(array(), $this->client->lrange('foo', 0, -1));
+
         $this->client->rpush('foo', 'hello', 'bar');
+        $this->assertSame(-1, $this->client->linsert('foo', 'after', 'derp', 'asdf'));
+        $this->assertEquals(array('hello', 'bar'), $this->client->lrange('foo', 0, -1));
 
         $this->assertSame(3, $this->client->linsert('foo', 'after', 'hello', 'world'));
         $this->assertEquals(array('hello', 'world', 'bar'), $this->client->lrange('foo', 0, -1));
@@ -982,6 +986,8 @@ class PredisTest extends \PHPUnit_Framework_TestCase
     public function testListRightPopLeftPush()
     {
         $this->assertNull($this->client->rpoplpush('foo', 'bar'));
+        $this->assertEquals(array(), $this->client->lrange('bar', 0, -1));
+
         $this->client->rpush('foo', 'A', 'B');
         $this->client->rpush('bar', 'C', 'D');
         $this->assertEquals('B', $this->client->rpoplpush('foo', 'bar'));
