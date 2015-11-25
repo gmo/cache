@@ -2,6 +2,7 @@
 
 namespace GMO\Cache;
 
+use Carbon\Carbon;
 use GMO\Common\Collections\ArrayCollection;
 use Predis;
 use Predis\Command;
@@ -51,8 +52,13 @@ class ArrayPredis implements Predis\ClientInterface
 
     protected function doExpire()
     {
+        if ($this->expiring->isEmpty()) {
+            return;
+        }
+
+        $now = $this->getTimestamp();
         foreach ($this->expiring as $key => $time) {
-            if (time() >= $time) {
+            if ($now >= $time) {
                 unset($this->expiring[$key]);
                 unset($this->data[$key]);
             }
@@ -100,7 +106,7 @@ class ArrayPredis implements Predis\ClientInterface
             return false;
         }
 
-        $this->expiring[$key] = time() + $seconds;
+        $this->expiring[$key] = $this->getTimestamp() + $seconds;
 
         return true;
     }
@@ -122,7 +128,7 @@ class ArrayPredis implements Predis\ClientInterface
             return false;
         }
 
-        $this->expiring[$key] = time() + ceil($milliseconds / 1000);
+        $this->expiring[$key] = $this->getTimestamp() + ceil($milliseconds / 1000);
 
         return true;
     }
@@ -179,7 +185,7 @@ class ArrayPredis implements Predis\ClientInterface
             return -1;
         }
 
-        return $this->expiring->get($key) - time();
+        return $this->expiring->get($key) - $this->getTimestamp();
     }
 
     public function pttl($key)
@@ -191,7 +197,7 @@ class ArrayPredis implements Predis\ClientInterface
             return -1;
         }
 
-        return ($this->expiring->get($key) - time()) * 1000;
+        return ($this->expiring->get($key) - $this->getTimestamp()) * 1000;
     }
 
     public function randomkey()
@@ -382,7 +388,7 @@ class ArrayPredis implements Predis\ClientInterface
 
         $this->data[$key] = $value;
         if ($ttl > 0) {
-            $this->expiring[$key] = time() + $ttl;
+            $this->expiring[$key] = $this->getTimestamp() + $ttl;
         }
 
         return 'OK';
@@ -391,7 +397,7 @@ class ArrayPredis implements Predis\ClientInterface
     public function setex($key, $seconds, $value)
     {
         $this->data[$key] = $value;
-        $this->expiring[$key] = time() + $seconds;
+        $this->expiring[$key] = $this->getTimestamp() + $seconds;
 
         return 'OK';
     }
@@ -399,7 +405,7 @@ class ArrayPredis implements Predis\ClientInterface
     public function psetex($key, $milliseconds, $value)
     {
         $this->data[$key] = $value;
-        $this->expiring[$key] = time() + ceil($milliseconds / 1000);
+        $this->expiring[$key] = $this->getTimestamp() + ceil($milliseconds / 1000);
 
         return 'OK';
     }
@@ -1032,5 +1038,10 @@ class ArrayPredis implements Predis\ClientInterface
     protected function resetListIndex($key)
     {
         $this->data[$key] = $this->data[$key]->getValues();
+    }
+
+    protected function getTimestamp()
+    {
+        return class_exists('Carbon\Carbon') ? Carbon::now()->timestamp : time();
     }
 }
