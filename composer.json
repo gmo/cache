@@ -1,5 +1,6 @@
 {
 	"name": "gmo/cache",
+	"license": "MIT",
 	"description": "Common cache abstraction and utilities",
 	"require": {
 		"alexey-kupershtokh/predis-phpdoc": "*",
