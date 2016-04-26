@@ -13,9 +13,6 @@
 		"nesbot/carbon": "^1.21",
 		"phpunit/phpunit": "3.7.*"
 	},
-	"suggest": {
-		"gmo/dependency-injection": "Provides a service provider for dependency injection"
-	},
 	"autoload": {
 		"psr-4": {
 			"GMO\\Cache\\": "src/"
