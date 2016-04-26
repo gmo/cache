@@ -7,9 +7,7 @@ use Predis\Client;
 use Predis\Pipeline\PipelineContext;
 
 /**
- * Class Redis
- * @package GMO\Common
- * @since 1.9.1
+ * @deprecated Use Predis instead.
  */
 class Redis implements ICache {
 	public function __construct($host='localhost', $port=6379, $slaves=array(), $options=array()) {

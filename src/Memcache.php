@@ -5,9 +5,7 @@ use GMO\Cache\Exception\ConnectionFailureException;
 use GMO\Cache\Exception\DependencyMissingException;
 
 /**
- * Class Memcache
- * @package GMO\Common
- * @since 1.9.1
+ * @deprecated Use Redis instead.
  */
 class Memcache implements ICache {
 	public function __construct($host='localhost', $port=11211) {

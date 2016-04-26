@@ -1,6 +1,9 @@
 <?php
 namespace GMO\Cache;
 
+/**
+ * @deprecated
+ */
 final class CacheKeys {
 
 	const REDIS_HOST = 'redis.host';

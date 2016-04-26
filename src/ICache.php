@@ -1,6 +1,9 @@
 <?php
 namespace GMO\Cache;
 
+/**
+ * @deprecated Use doctrine/cache instead.
+ */
 interface ICache {
 	function get($key);
 	function set($key, $value, $expiration = 0);

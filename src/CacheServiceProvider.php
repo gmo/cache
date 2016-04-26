@@ -4,6 +4,9 @@ namespace GMO\Cache;
 use GMO\DependencyInjection\ServiceProviderInterface;
 use Pimple;
 
+/**
+ * @deprecated
+ */
 class CacheServiceProvider implements ServiceProviderInterface {
 
 	/** @inheritdoc */

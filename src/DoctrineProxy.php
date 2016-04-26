@@ -6,6 +6,8 @@ use Doctrine\Common\Cache\ClearableCache;
 
 /**
  * Wraps a Doctrine Cache instance in an ICache interface.
+ * 
+ * @deprecated Use doctrine/cache instead.
  */
 class DoctrineProxy implements ICache
 {
