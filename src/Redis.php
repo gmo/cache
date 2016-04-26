@@ -4,7 +4,7 @@ namespace GMO\Cache;
 use GMO\Cache\Exception\ConnectionFailureException;
 use GMO\Cache\Exception\InvalidSlaveException;
 use Predis\Client;
-use Predis\Pipeline\PipelineContext;
+use Predis\Pipeline\Pipeline;
 
 /**
  * @deprecated Use Predis instead.
@@ -119,7 +119,7 @@ class Redis implements ICache {
 
 	public function setList($key, array $data) {
 		$this->redis->pipeline(function($pipe) use ($key, $data) {
-			/** @var PipelineContext|\PredisPhpdoc\Client $pipe */
+			/** @var Pipeline $pipe */
 			$pipe->del($key);
 			$pipe->rpush($key, $data);
 		});
@@ -165,6 +165,6 @@ class Redis implements ICache {
 
 	protected $host = null;
 	protected $port = null;
-	/** @var \PredisPhpdoc\Client */
+	/** @var \Predis\ClientInterface */
 	public $redis;
 }

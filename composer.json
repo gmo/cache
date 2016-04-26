@@ -3,7 +3,6 @@
 	"license": "MIT",
 	"description": "Common cache abstraction and utilities",
 	"require": {
-		"alexey-kupershtokh/predis-phpdoc": "*",
 		"gmo/common": "^1.26@dev",
 		"predis/predis": "^1.0"
 	},
