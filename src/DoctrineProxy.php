@@ -67,6 +67,7 @@ class DoctrineProxy implements ICache
     {
         if ($this->cache instanceof ClearableCache) {
             $this->cache->deleteAll();
+            return;
         }
 
         throw new \RuntimeException('Cache given is not an instanceof Doctrine\Common\Cache\ClearableCache');
