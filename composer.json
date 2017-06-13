@@ -3,7 +3,7 @@
 	"license": "MIT",
 	"description": "Common cache abstraction and utilities",
 	"require": {
-		"gmo/common": "^1.26@dev",
+		"gmo/common": "^1.31@dev",
 		"predis/predis": "^1.0"
 	},
 	"require-dev": {
