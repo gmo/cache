@@ -3,6 +3,9 @@ namespace GMO\Cache;
 
 use Doctrine\Common\Cache\Cache;
 use Doctrine\Common\Cache\ClearableCache;
+use Gmo\Common\Deprecated;
+
+Deprecated::cls('\GMO\Cache\DoctrineProxy');
 
 /**
  * Wraps a Doctrine Cache instance in an ICache interface.

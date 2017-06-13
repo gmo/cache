@@ -3,8 +3,11 @@ namespace GMO\Cache;
 
 use GMO\Cache\Exception\ConnectionFailureException;
 use GMO\Cache\Exception\InvalidSlaveException;
+use Gmo\Common\Deprecated;
 use Predis\Client;
 use Predis\Pipeline\Pipeline;
+
+Deprecated::cls('\GMO\Cache\Redis');
 
 /**
  * @deprecated Use Predis instead.

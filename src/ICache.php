@@ -1,6 +1,10 @@
 <?php
 namespace GMO\Cache;
 
+use Gmo\Common\Deprecated;
+
+Deprecated::cls('\GMO\Cache\ICache');
+
 /**
  * @deprecated Use doctrine/cache instead.
  */

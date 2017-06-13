@@ -1,8 +1,11 @@
 <?php
 namespace GMO\Cache;
 
+use Gmo\Common\Deprecated;
 use GMO\DependencyInjection\ServiceProviderInterface;
 use Pimple;
+
+Deprecated::cls('\GMO\Cache\CacheServiceProvider');
 
 /**
  * @deprecated

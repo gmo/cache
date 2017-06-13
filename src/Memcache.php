@@ -3,6 +3,9 @@ namespace GMO\Cache;
 
 use GMO\Cache\Exception\ConnectionFailureException;
 use GMO\Cache\Exception\DependencyMissingException;
+use Gmo\Common\Deprecated;
+
+Deprecated::cls('\GMO\Cache\Memcache');
 
 /**
  * @deprecated Use Redis instead.
